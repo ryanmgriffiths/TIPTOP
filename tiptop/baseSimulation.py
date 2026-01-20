@@ -47,6 +47,8 @@ class baseSimulation(object):
                           savePSDs=False, ensquaredEnergy=False,
                           eeRadiusInMas=50):
 
+
+
         self.firstSimCall =True
         if verbose: np.set_printoptions(precision=3)
         self.doConvolveAsterism = True
@@ -911,7 +913,7 @@ class baseSimulation(object):
                     self.ee = ee
 
 
-    def doOverallSimulation(self, astIndex=None):
+    def doOverallSimulation(self, astIndex=None, psdOnly=False):
 
         if self.LOisOn:
             self.configLO(astIndex)
@@ -929,11 +931,11 @@ class baseSimulation(object):
             if self.verbose:
                 print('******** HO PSD science and NGSs directions')
 
-            self.fao = fourierModel( self.fullPathFilename, calcPSF=False, verbose=self.verbose
+            self.fao = fourierModel(self.fullPathFilename, calcPSF=False, verbose=self.verbose
                                , display=False, getPSDatNGSpositions=self.LOisOn
                                , computeFocalAnisoCov=False, TiltFilter=self.LOisOn
                                , getErrorBreakDown=self.getHoErrorBreakDown, doComputations=False
-                               , psdExpansion=True, reduce_memory=True)
+                               , psdExpansion=True, reduce_memory=True, nyquistSampling=psdOnly)
 
             if 'sensor_LO' in self.my_data_map.keys():
                 self.fao.my_data_map['sensor_LO']['NumberPhotons'] = self.my_data_map['sensor_LO']['NumberPhotons']
@@ -966,6 +968,9 @@ class baseSimulation(object):
             self.mask = Field(self.wvlRef, self.N, self.grid_diameter)
             self.mask.sampling = congrid(arrayP3toMastsel(self.fao.ao.tel.pupil), [self.sx, self.sx])
             self.mask.sampling = zeroPad(self.mask.sampling, (self.N-self.sx)//2)
+
+            if psdOnly:
+                return self.PSD, self.fao.freq.k2_
             # error messages for wrong pixel size
             if self.psInMas != cpuArray(self.fao.freq.psInMas[0]):
                 raise ValueError("sensor_science.PixelScale, '{}', is different from self.fao.freq.psInMas,'{}'"
@@ -1072,6 +1077,8 @@ class baseSimulation(object):
 
         # ------------------------------------------------------------------------
         # final PSF computation
+
+        
         self.finalPSF(astIndex)
 
         # ------------------------------------------------------------------------
